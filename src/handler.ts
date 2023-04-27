@@ -32,6 +32,7 @@ const handler = async function (event: any) {
     const adminList: SQSUser[] = [];
     const userList: SQSUser[] = [];
 
+    // parse MSK events and get list of admin users and normal users
     for (const key in event.records) {
         // Iterate through records
         event.records[key].map((record: any) => {
@@ -48,6 +49,7 @@ const handler = async function (event: any) {
         });
     }
 
+    // Process admin users and upload them to dynamodb
     const usersForDynamoDb: aws.DynamoDB.DocumentClient.WriteRequests = [];
     of(...adminList)
         .subscribe((user) => usersForDynamoDb.push({
@@ -64,6 +66,7 @@ const handler = async function (event: any) {
         await db.batchWrite(dbParams).promise();
     }
 
+    // process normal users and send them to SQS
     const usersForSQS: aws.SQS.SendMessageBatchRequestEntryList = [];
     of(...userList)
         .subscribe((user) =>  usersForSQS.push({
